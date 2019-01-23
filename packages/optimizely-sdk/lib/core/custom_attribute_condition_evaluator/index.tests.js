@@ -14,13 +14,17 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-var chai = require('chai');
 var customAttributeEvaluator = require('./');
-var logger = require('../../plugins/logger');
 var enums = require('../../utils/enums');
-var LOG_LEVEL = enums.LOG_LEVEL;
+var logger = require('../../plugins/logger');
+var sprintf = require('sprintf-js').sprintf;
 
+var chai = require('chai');
+var sinon = require('sinon');
 var assert = chai.assert;
+
+var LOG_LEVEL = enums.LOG_LEVEL;
+var LOG_MESSAGES = enums.LOG_MESSAGES;
 
 var browserConditionSafari = {
   name: 'browser_type',
@@ -45,6 +49,14 @@ var doubleCondition = {
 
 describe('lib/core/custom_attribute_condition_evaluator', function() {
   var mockLogger = logger.createLogger({logLevel: LOG_LEVEL.INFO});
+
+  beforeEach(function () {
+    sinon.stub(mockLogger, 'log');
+  });
+
+  afterEach(function () {
+    mockLogger.log.restore();
+  });
 
   it('should return true when the attributes pass the audience conditions and no match type is provided', function() {
     var userAttributes = {
@@ -76,31 +88,55 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
     assert.isTrue(customAttributeEvaluator.evaluate(doubleCondition, userAttributes, mockLogger));
   });
 
-  it('should return null when condition has an invalid type property', function() {
+  it('should log and return null when condition has an invalid type property', function() {
     var result = customAttributeEvaluator.evaluate(
       { match: 'exact', name: 'weird_condition', type: 'weird', value: 'hi' },
       { weird_condition: 'bye' },
       mockLogger
     );
     assert.isNull(result);
+    sinon.assert.calledOnce(mockLogger.log);
+    sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
+      sprintf(
+          'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" has an unknown condition type. ' +
+          'You may need to upgrade to a newer release of the Optimizely SDK.',
+          { match: 'exact', name: 'weird_condition', type: 'weird', value: 'hi' }
+      )
+    );
   });
 
-  it('should return null when condition has no type property', function() {
+  it('should log and return null when condition has no type property', function() {
     var result = customAttributeEvaluator.evaluate(
       { match: 'exact', name: 'weird_condition', value: 'hi' },
       { weird_condition: 'bye' },
       mockLogger
     );
     assert.isNull(result);
+    sinon.assert.calledOnce(mockLogger.log);
+    sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
+      sprintf(
+        'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" has an unknown condition type. ' +
+        'You may need to upgrade to a newer release of the Optimizely SDK.',
+        { match: 'exact', name: 'weird_condition', value: 'hi' }
+      )
+    );
   });
 
-  it('should return null when condition has an invalid match property', function() {
+  it('should log and return null when condition has an invalid match property', function() {
     var result = customAttributeEvaluator.evaluate(
       { match: 'weird', name: 'weird_condition', type: 'custom_attribute', value: 'hi' },
       { weird_condition: 'bye' },
       mockLogger
     );
     assert.isNull(result);
+    sinon.assert.calledOnce(mockLogger.log);
+    sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
+      sprintf(
+        'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" has an unknown match type. ' +
+        'You may need to upgrade to a newer release of the Optimizely SDK.',
+        { match: 'weird', name: 'weird_condition', type: 'custom_attribute', value: 'hi' }
+      )
+    );
   });
 
   describe('exists match type', function() {
@@ -113,6 +149,7 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
     it('should return false if there is no user-provided value', function() {
       var result = customAttributeEvaluator.evaluate(existsCondition, {}, mockLogger);
       assert.isFalse(result);
+      sinon.assert.notCalled(mockLogger.log);
     });
 
     it('should return false if the user-provided value is undefined', function() {
@@ -160,13 +197,33 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
         assert.isFalse(result);
       });
 
-      it('should return null if the user-provided value is of a different type than the condition value', function() {
+      it('should log and return null if the user-provided value is of a different type than the condition value', function() {
         var result = customAttributeEvaluator.evaluate(exactStringCondition, { favorite_constellation: false }, mockLogger);
         assert.isNull(result);
+        sinon.assert.calledOnce(mockLogger.log);
+        sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
+          sprintf(
+            'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition %s evaluated as UNKNOWN because a value of ' +
+              'type "%s" was passed for user attribute "%s".',
+            exactStringCondition, 'boolean', 'favorite_constellation'
+          )
+        );
       });
 
-      it('should return null if there is no user-provided value', function() {
+      it('should log and return null if there is no user-provided value', function() {
         var result = customAttributeEvaluator.evaluate(exactStringCondition, {}, mockLogger);
+        assert.isNull(result);
+        sinon.assert.calledOnce(mockLogger.log);
+        sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
+          sprintf(
+            'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition %s evaluated as UNKNOWN because no value was passed for user attribute "%s".',
+            exactStringCondition, 'favorite_constellation'
+          )
+        );
+      });
+
+      it('should log and return null if the user-provided value is of a unexpected type', function() {
+        var result = customAttributeEvaluator.evaluate(exactStringCondition, { favorite_constellation: [] }, mockLogger);
         assert.isNull(result);
       });
     });
