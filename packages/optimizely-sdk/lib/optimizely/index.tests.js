@@ -314,12 +314,12 @@ describe('lib/optimizely', function() {
 
       assert.strictEqual(activate, 'variation');
       eventDispatcherPromise.then(function() {
+        var logMessage = createdLogger.log.args[5][1];
         //checking that we executed our callback after resolving the promise
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.INFO,
-            sprintf(LOG_MESSAGES.ACTIVATE_USER, 'OPTIMIZELY', 'testUser', 'testExperiment')
-        );
+        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.ACTIVATE_USER,
+                                               'OPTIMIZELY',
+                                               'testUser',
+                                               'testExperiment'));
         done();
       });
     });
@@ -342,7 +342,7 @@ describe('lib/optimizely', function() {
       instance.track('testEvent', 'testUser');
       //checking that we executed our callback after resolving the promise
       eventDispatcherPromise.then(function() {
-        var logMessage = createdLogger.log.args[5][1];
+        var logMessage = createdLogger.log.args[7][1];
         assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.TRACK_EVENT,
                                                'OPTIMIZELY',
                                                'testEvent',
@@ -3564,47 +3564,6 @@ describe('lib/optimizely', function() {
         optlyInstance.configObj.experiments[2].audienceConditions,
         optlyInstance.configObj.audiencesById,
         { house: 'Hufflepuff', lasers: 45.5 },
-        createdLogger
-      );
-    });
-
-    it('can track an experiment with complex audience conditions', function() {
-      optlyInstance.track('user_signed_up', 'user1', {
-        // Should be included via exact match string audience with id '3468206642', and
-        // exact match boolean audience with id '3468206643'
-        house: 'Gryffindor',
-        should_do_it: true,
-      });
-      sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-      assert.includeDeepMembers(
-        eventDispatcher.dispatchEvent.getCall(0).args[0].params.visitors[0].attributes,
-        [
-          { entity_id: '594015', key: 'house', type: 'custom', value: 'Gryffindor' },
-          { entity_id: '594017', key: 'should_do_it', type: 'custom', value: true }
-        ]
-      );
-      sinon.assert.calledWithExactly(
-        audienceEvaluator.evaluate,
-        optlyInstance.configObj.experiments[2].audienceConditions,
-        optlyInstance.configObj.audiencesById,
-        { house: 'Gryffindor', should_do_it: true },
-        createdLogger
-      );
-    });
-
-    it('can exclude a user from an experiment with complex audience conditions via track', function() {
-      optlyInstance.track('user_signed_up', 'user1', {
-        // Should be excluded - exact match boolean audience with id '3468206643' does not match,
-        // so the overall conditions fail
-        house: 'Gryffindor',
-        should_do_it: false,
-      });
-      sinon.assert.notCalled(eventDispatcher.dispatchEvent);
-      sinon.assert.calledWithExactly(
-        audienceEvaluator.evaluate,
-        optlyInstance.configObj.experiments[2].audienceConditions,
-        optlyInstance.configObj.audiencesById,
-        { house: 'Gryffindor', should_do_it: false },
         createdLogger
       );
     });
