@@ -56,20 +56,19 @@ EVALUATORS_BY_MATCH_TYPE[SUBSTRING_MATCH_TYPE] = substringEvaluator;
  */
 function evaluate(condition, userAttributes, logger) {
   if (condition.type !== CUSTOM_ATTRIBUTE_CONDITION_TYPE) {
-    console.log('here'+logger);
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNKNOWN_CONDITION_TYPE, MODULE_NAME, condition));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNKNOWN_CONDITION_TYPE, MODULE_NAME, JSON.stringify(condition)));
     return null;
   }
 
   var conditionMatch = condition.match;
   if (typeof conditionMatch !== 'undefined' && MATCH_TYPES.indexOf(conditionMatch) === -1) {
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNKNOWN_MATCH_TYPE, MODULE_NAME, condition));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNKNOWN_MATCH_TYPE, MODULE_NAME, JSON.stringify(condition)));
     return null;
   }
 
   var attributeKey = condition.name;
   if (!userAttributes.hasOwnProperty(attributeKey) && conditionMatch != EXISTS_MATCH_TYPE) {
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.MISSING_ATTRIBUTE_VALUE, MODULE_NAME, condition, attributeKey));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.MISSING_ATTRIBUTE_VALUE, MODULE_NAME, JSON.stringify(condition), attributeKey));
     return null;
   }
 
@@ -110,8 +109,13 @@ function exactEvaluator(condition, userAttributes, logger) {
     return null;
   }
 
+  if (userValue === null) {
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE_NULL, MODULE_NAME, JSON.stringify(condition), attributeKey));
+    return null;
+  }
+
   if (!isValueValidForExactConditions(userValue) || conditionValueType !== userValueType) {
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, condition, userValueType, conditionName));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, JSON.stringify(condition), userValueType, conditionName));
     return null;
   }
 
@@ -151,8 +155,13 @@ function greaterThanEvaluator(condition, userAttributes, logger) {
     return null;
   }
 
+  if (userValue === null) {
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE_NULL, MODULE_NAME, JSON.stringify(condition), attributeKey));
+    return null;
+  }
+
   if (!fns.isFinite(userValue)) {
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, condition, conditionName, userValue));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, JSON.stringify(condition), conditionName, userValue));
     return null;
   }
 
@@ -178,8 +187,13 @@ function lessThanEvaluator(condition, userAttributes, logger) {
     return null;
   }
 
+  if (userValue === null) {
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE_NULL, MODULE_NAME, JSON.stringify(condition), attributeKey));
+    return null;
+  }
+
   if (!fns.isFinite(userValue)) {
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, condition, conditionName, userValue));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, JSON.stringify(condition), conditionName, userValue));
     return null;
   }
 
@@ -205,8 +219,13 @@ function substringEvaluator(condition, userAttributes, logger) {
     return null;
   }
 
+  if (userValue === null) {
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE_NULL, MODULE_NAME, JSON.stringify(condition), attributeKey));
+    return null;
+  }
+
   if (typeof userValue !== 'string') {
-    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, condition, conditionName, userValue));
+    logger.log(LOG_LEVEL.WARNING, sprintf(LOG_MESSAGES.UNEXPECTED_TYPE, MODULE_NAME, JSON.stringify(condition), conditionName, userValue));
     return null;
   }
 

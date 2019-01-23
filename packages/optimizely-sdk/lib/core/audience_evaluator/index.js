@@ -47,8 +47,6 @@ module.exports = {
       userAttributes = {};
     }
 
-    logger.log(LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_ATTRIBUTES, MODULE_NAME, userAttributes));
-
     var evaluateConditionWithUserAttributes = function(condition) {
       return customAttributeConditionEvaluator.evaluate(condition, userAttributes, logger);
     };
@@ -56,7 +54,7 @@ module.exports = {
     var evaluateAudience = function(audienceId) {
       var audience = audiencesById[audienceId];
       if (audience) {
-        logger.log(LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.EVALUATING_AUDIENCE_WITH_CONDITIONS, MODULE_NAME, audienceId, audience.conditions));
+        logger.log(LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.EVALUATING_AUDIENCE_WITH_CONDITIONS, MODULE_NAME, audienceId, JSON.stringify(audience.conditions)));
         var result = conditionTreeEvaluator.evaluate(audience.conditions, evaluateConditionWithUserAttributes);
         var resultText = result === null ? 'UNKNOWN' : sprintf('%s', result);
         logger.log(LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.AUDIENCE_EVALUATION_RESULT, MODULE_NAME, audienceId, resultText));

@@ -75,11 +75,11 @@ describe('lib/core/decision_service', function() {
 
       it('should return null if the user does not meet audience conditions', function () {
         assert.isNull(decisionServiceInstance.getVariation('testExperimentWithAudiences', 'user3', {foo: 'bar'}));
-        assert.strictEqual(8, mockLogger.log.callCount);
+        assert.strictEqual(7, mockLogger.log.callCount);
         assert.strictEqual(mockLogger.log.args[0][1], 'PROJECT_CONFIG: User user3 is not in the forced variation map.');
         assert.strictEqual(mockLogger.log.args[1][1], 'DECISION_SERVICE: Evaluating audiences for experiment "testExperimentWithAudiences": "11154".');
-        assert.strictEqual(mockLogger.log.args[6][1], 'DECISION_SERVICE: Audiences for experiment testExperimentWithAudiences collectively evaluated as false.');
-        assert.strictEqual(mockLogger.log.args[7][1], 'DECISION_SERVICE: User user3 does not meet conditions to be in experiment testExperimentWithAudiences.');
+        assert.strictEqual(mockLogger.log.args[5][1], 'DECISION_SERVICE: Audiences for experiment testExperimentWithAudiences collectively evaluated to false.');
+        assert.strictEqual(mockLogger.log.args[6][1], 'DECISION_SERVICE: User user3 does not meet conditions to be in experiment testExperimentWithAudiences.');
       });
 
       it('should return null if the experiment is not running', function () {
@@ -420,24 +420,24 @@ describe('lib/core/decision_service', function() {
     describe('__checkIfUserIsInAudience', function () {
       it('should return true when audience conditions are met', function () {
         assert.isTrue(decisionServiceInstance.__checkIfUserIsInAudience('testExperimentWithAudiences', 'testUser', {browser_type: 'firefox'}));
-        assert.strictEqual(5, mockLogger.log.callCount);
+        assert.strictEqual(4, mockLogger.log.callCount);
         assert.strictEqual(mockLogger.log.args[0][1], 'DECISION_SERVICE: Evaluating audiences for experiment "testExperimentWithAudiences": "11154".');
-        assert.strictEqual(mockLogger.log.args[4][1], 'DECISION_SERVICE: Audiences for experiment testExperimentWithAudiences collectively evaluated as true.');
+        assert.strictEqual(mockLogger.log.args[3][1], 'DECISION_SERVICE: Audiences for experiment testExperimentWithAudiences collectively evaluated to true.');
       });
 
       it('should return true when experiment has no audience', function () {
         assert.isTrue(decisionServiceInstance.__checkIfUserIsInAudience('testExperiment', 'testUser'));
           assert.strictEqual(2, mockLogger.log.callCount);
           assert.strictEqual(mockLogger.log.args[0][1], 'DECISION_SERVICE: Evaluating audiences for experiment "testExperiment": "".');
-          assert.strictEqual(mockLogger.log.args[1][1], 'DECISION_SERVICE: Audiences for experiment testExperiment collectively evaluated as true.');
+          assert.strictEqual(mockLogger.log.args[1][1], 'DECISION_SERVICE: Audiences for experiment testExperiment collectively evaluated to true.');
       });
 
       it('should return false when audience conditions are not met', function () {
         assert.isFalse(decisionServiceInstance.__checkIfUserIsInAudience('testExperimentWithAudiences', 'testUser', {browser_type: 'chrome'}));
-        assert.strictEqual(6, mockLogger.log.callCount);
+        assert.strictEqual(5, mockLogger.log.callCount);
         assert.strictEqual(mockLogger.log.args[0][1], 'DECISION_SERVICE: Evaluating audiences for experiment "testExperimentWithAudiences": "11154".');
-        assert.strictEqual(mockLogger.log.args[4][1], 'DECISION_SERVICE: Audiences for experiment testExperimentWithAudiences collectively evaluated as false.');
-        assert.strictEqual(mockLogger.log.args[5][1], 'DECISION_SERVICE: User testUser does not meet conditions to be in experiment testExperimentWithAudiences.');
+        assert.strictEqual(mockLogger.log.args[3][1], 'DECISION_SERVICE: Audiences for experiment testExperimentWithAudiences collectively evaluated to false.');
+        assert.strictEqual(mockLogger.log.args[4][1], 'DECISION_SERVICE: User testUser does not meet conditions to be in experiment testExperimentWithAudiences.');
       });
     });
 

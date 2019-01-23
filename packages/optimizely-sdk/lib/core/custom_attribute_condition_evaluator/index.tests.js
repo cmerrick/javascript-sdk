@@ -100,7 +100,7 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
       sprintf(
           'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" has an unknown condition type. ' +
           'You may need to upgrade to a newer release of the Optimizely SDK.',
-          { match: 'exact', name: 'weird_condition', type: 'weird', value: 'hi' }
+          JSON.stringify({ match: 'exact', name: 'weird_condition', type: 'weird', value: 'hi' })
       )
     );
   });
@@ -117,7 +117,7 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
       sprintf(
         'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" has an unknown condition type. ' +
         'You may need to upgrade to a newer release of the Optimizely SDK.',
-        { match: 'exact', name: 'weird_condition', value: 'hi' }
+        JSON.stringify({ match: 'exact', name: 'weird_condition', value: 'hi' })
       )
     );
   });
@@ -131,10 +131,8 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
     assert.isNull(result);
     sinon.assert.calledOnce(mockLogger.log);
     sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
-      sprintf(
-        'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" has an unknown match type. ' +
-        'You may need to upgrade to a newer release of the Optimizely SDK.',
-        { match: 'weird', name: 'weird_condition', type: 'custom_attribute', value: 'hi' }
+      sprintf('CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition "%s" uses an unknown match type. You may need to upgrade to a newer release of the Optimizely SDK.',
+      JSON.stringify({ match: 'weird', name: 'weird_condition', type: 'custom_attribute', value: 'hi' })
       )
     );
   });
@@ -203,9 +201,8 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
         sinon.assert.calledOnce(mockLogger.log);
         sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
           sprintf(
-            'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition %s evaluated as UNKNOWN because a value of ' +
-              'type "%s" was passed for user attribute "%s".',
-            exactStringCondition, 'boolean', 'favorite_constellation'
+            'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition %s evaluated to UNKNOWN because a value of type "%s" was passed for user attribute "%s".',
+            JSON.stringify(exactStringCondition), 'boolean', 'favorite_constellation'
           )
         );
       });
@@ -216,8 +213,8 @@ describe('lib/core/custom_attribute_condition_evaluator', function() {
         sinon.assert.calledOnce(mockLogger.log);
         sinon.assert.calledWithExactly(mockLogger.log, LOG_LEVEL.WARNING,
           sprintf(
-            'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition %s evaluated as UNKNOWN because no value was passed for user attribute "%s".',
-            exactStringCondition, 'favorite_constellation'
+            'CUSTOM_ATTRIBUTE_CONDITION_EVALUATOR: Audience condition %s evaluated to UNKNOWN because no value was passed for user attribute "%s".',
+            JSON.stringify(exactStringCondition), 'favorite_constellation'
           )
         );
       });

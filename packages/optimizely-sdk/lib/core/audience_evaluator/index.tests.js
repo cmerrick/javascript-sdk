@@ -228,16 +228,15 @@ describe('lib/core/audience_evaluator', function() {
           sinon.assert.calledOnce(customAttributeConditionEvaluator.evaluate);
           sinon.assert.calledWithExactly(customAttributeConditionEvaluator.evaluate, iphoneUserAudience.conditions[1], userAttributes, mockLogger);
           assert.isFalse(result);
-          assert.strictEqual(3, mockLogger.log.callCount);
-          assert.strictEqual(mockLogger.log.args[0][1], sprintf('AUDIENCE_EVALUATOR: User attributes: "%s".', { device_model: 5.5 }));
+          assert.strictEqual(2, mockLogger.log.callCount);
           assert.strictEqual(
-            mockLogger.log.args[1][1],
+            mockLogger.log.args[0][1],
             sprintf(
               'AUDIENCE_EVALUATOR: Starting to evaluate audience "1" with conditions: "%s".',
-              [ 'and',{ name: 'device_model', value: 'iphone', type: 'custom_attribute' } ]
+              JSON.stringify([ 'and',{ name: 'device_model', value: 'iphone', type: 'custom_attribute' } ])
             )
           );
-          assert.strictEqual(mockLogger.log.args[2][1], 'AUDIENCE_EVALUATOR: Audience "1" evaluated as UNKNOWN.');
+          assert.strictEqual(mockLogger.log.args[1][1], 'AUDIENCE_EVALUATOR: Audience "1" evaluated to UNKNOWN.');
         });
 
         it('returns true if conditionTreeEvaluator.evaluate returns true', function() {
@@ -250,16 +249,15 @@ describe('lib/core/audience_evaluator', function() {
           sinon.assert.calledOnce(customAttributeConditionEvaluator.evaluate);
           sinon.assert.calledWithExactly(customAttributeConditionEvaluator.evaluate, iphoneUserAudience.conditions[1], userAttributes, mockLogger);
           assert.isTrue(result);
-          assert.strictEqual(3, mockLogger.log.callCount);
-          assert.strictEqual(mockLogger.log.args[0][1], sprintf('AUDIENCE_EVALUATOR: User attributes: "%s".', { device_model: 'iphone' }));
+          assert.strictEqual(2, mockLogger.log.callCount);
           assert.strictEqual(
-            mockLogger.log.args[1][1],
+            mockLogger.log.args[0][1],
             sprintf(
               'AUDIENCE_EVALUATOR: Starting to evaluate audience "1" with conditions: "%s".',
-              [ 'and',{ name: 'device_model', value: 'iphone', type: 'custom_attribute' } ]
+              JSON.stringify([ 'and',{ name: 'device_model', value: 'iphone', type: 'custom_attribute' } ])
             )
           );
-          assert.strictEqual(mockLogger.log.args[2][1], 'AUDIENCE_EVALUATOR: Audience "1" evaluated as true.');
+          assert.strictEqual(mockLogger.log.args[1][1], 'AUDIENCE_EVALUATOR: Audience "1" evaluated to true.');
         });
 
         it('returns false if conditionTreeEvaluator.evaluate returns false', function() {
@@ -272,16 +270,15 @@ describe('lib/core/audience_evaluator', function() {
           sinon.assert.calledOnce(customAttributeConditionEvaluator.evaluate);
           sinon.assert.calledWithExactly(customAttributeConditionEvaluator.evaluate, iphoneUserAudience.conditions[1], userAttributes, mockLogger);
           assert.isFalse(result);
-          assert.strictEqual(3, mockLogger.log.callCount);
-          assert.strictEqual(mockLogger.log.args[0][1], sprintf('AUDIENCE_EVALUATOR: User attributes: "%s".', { device_model: 'android' }));
+          assert.strictEqual(2, mockLogger.log.callCount);
           assert.strictEqual(
-            mockLogger.log.args[1][1],
+            mockLogger.log.args[0][1],
             sprintf(
               'AUDIENCE_EVALUATOR: Starting to evaluate audience "1" with conditions: "%s".',
-              [ 'and',{ name: 'device_model', value: 'iphone', type: 'custom_attribute' } ]
+              JSON.stringify([ 'and',{ name: 'device_model', value: 'iphone', type: 'custom_attribute' } ])
             )
           );
-          assert.strictEqual(mockLogger.log.args[2][1], 'AUDIENCE_EVALUATOR: Audience "1" evaluated as false.');
+          assert.strictEqual(mockLogger.log.args[1][1], 'AUDIENCE_EVALUATOR: Audience "1" evaluated to false.');
         });
       });
     });
