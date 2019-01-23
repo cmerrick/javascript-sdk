@@ -342,11 +342,11 @@ describe('lib/optimizely', function() {
       instance.track('testEvent', 'testUser');
       //checking that we executed our callback after resolving the promise
       eventDispatcherPromise.then(function() {
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.INFO,
-            sprintf(LOG_MESSAGES.TRACK_EVENT, 'OPTIMIZELY', 'testEvent', 'testUser')
-        );
+        var logMessage = createdLogger.log.args[5][1];
+        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.TRACK_EVENT,
+                                               'OPTIMIZELY',
+                                               'testEvent',
+                                               'testUser'));
         done();
       });
     });
@@ -427,7 +427,8 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
@@ -482,7 +483,8 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
 
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
@@ -538,7 +540,8 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
 
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
@@ -615,7 +618,8 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
 
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
@@ -682,7 +686,8 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
 
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
@@ -738,7 +743,8 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
 
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
@@ -927,7 +933,8 @@ describe('lib/optimizely', function() {
               'client_name': 'node-sdk',
               'client_version': enums.NODE_CLIENT_VERSION,
               'anonymize_ip': false,
-            }
+              'enrich_decisions': true,
+            },
           };
 
           var logMessage2 = createdLogger.log.args[2][1];
@@ -968,11 +975,9 @@ describe('lib/optimizely', function() {
     });
 
     describe('#track', function() {
-      it('should call bucketer and dispatchEvent with proper args', function() {
-        bucketStub.returns('111129');
+      it('should dispatch an event when no attributes are provided and the event\'s experiment is untargeted', function() {
         optlyInstance.track('testEvent', 'testUser');
 
-        sinon.assert.calledOnce(bucketer.bucket);
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
         sinon.assert.called(createdLogger.log);
 
@@ -984,11 +989,6 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '4',
-                  'experiment_id': '111127',
-                  'variation_id': '111129'
-                }],
                 'events': [{
                   'entity_id': '111095',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1003,28 +1003,159 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
 
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION,
-            'PROJECT_CONFIG',
-            'testUser'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-            'OPTIMIZELY',
-            expectedObj.url,
-            JSON.stringify(expectedObj.params)));
+        var logMessage = createdLogger.log.args[0][1];
+        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
+                                               'OPTIMIZELY',
+                                               expectedObj.url,
+                                               JSON.stringify(expectedObj.params)));
       });
 
-      it('should call bucketer and dispatchEvent with proper args when including null value attributes', function() {
-        bucketStub.returns('122229');
+      it('should dispatch an event when empty attributes are provided and the event\'s experiment is untargeted', function() {
+        optlyInstance.track('testEvent', 'testUser', {});
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
+                'events': [{
+                  'entity_id': '111095',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEvent'
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should dispatch an event when attributes are provided and the event\'s experiment is untargeted', function() {
+        optlyInstance.track('testEvent', 'testUser', { browser_type: 'safari' });
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
+                'events': [{
+                  'entity_id': '111095',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEvent'
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [
+                {
+                  'entity_id': '111094',
+                  'key': 'browser_type',
+                  'type': 'custom',
+                  'value': 'safari',
+                },
+              ],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should dispatch an event when no attributes are provided and the event\'s experiment is targeted', function() {
+        optlyInstance.track('testEventWithAudiences', 'testUser');
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
+                'events': [{
+                  'entity_id': '111097',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEventWithAudiences'
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should dispatch an event when empty attributes are provided and the event\'s experiment is targeted', function() {
+        optlyInstance.track('testEventWithAudiences', 'testUser');
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
+                'events': [{
+                  'entity_id': '111097',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEventWithAudiences'
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should call dispatchEvent with proper args when including null value attributes', function() {
         optlyInstance.track('testEventWithAudiences', 'testUser', {browser_type: 'firefox', 'test_null_attribute': null});
 
-        sinon.assert.calledOnce(bucketer.bucket);
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
+        sinon.assert.calledOnce(createdLogger.log);
 
         var expectedObj = {
           url: 'https://logx.optimizely.com/v1/events',
@@ -1034,11 +1165,6 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '5',
-                  'experiment_id': '122227',
-                  'variation_id': '122229'
-                }],
                 'events': [{
                   'entity_id': '111097',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1058,28 +1184,24 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
 
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION,
-            'PROJECT_CONFIG',
-            'testUser'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-            'OPTIMIZELY',
-            expectedObj.url,
-            JSON.stringify(expectedObj.params)));
+        var logMessage = createdLogger.log.args[0][1];
+        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
+                                               'OPTIMIZELY',
+                                               expectedObj.url,
+                                               JSON.stringify(expectedObj.params)));
       });
 
-      it('should call bucketer and dispatchEvent with proper args when including attributes', function() {
-        bucketStub.returns('122229');
+      it('should call dispatchEvent with proper args when including attributes', function() {
         optlyInstance.track('testEventWithAudiences', 'testUser', {browser_type: 'firefox'});
 
-        sinon.assert.calledOnce(bucketer.bucket);
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
+        sinon.assert.calledOnce(createdLogger.log);
 
         var expectedObj = {
           url: 'https://logx.optimizely.com/v1/events',
@@ -1089,11 +1211,6 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '5',
-                  'experiment_id': '122227',
-                  'variation_id': '122229'
-                }],
                 'events': [{
                   'entity_id': '111097',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1113,28 +1230,24 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
 
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION,
-            'PROJECT_CONFIG',
-            'testUser'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-            'OPTIMIZELY',
-            expectedObj.url,
-            JSON.stringify(expectedObj.params)));
+        var logMessage = createdLogger.log.args[0][1];
+        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
+                                               'OPTIMIZELY',
+                                               expectedObj.url,
+                                               JSON.stringify(expectedObj.params)));
       });
 
       it('should call bucketer and dispatchEvent with proper args when including event tags', function() {
-        bucketStub.returns('111129');
         optlyInstance.track('testEvent', 'testUser', undefined, {eventTag: 'chill'});
 
-        sinon.assert.calledOnce(bucketer.bucket);
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
+        sinon.assert.calledOnce(createdLogger.log);
 
         var expectedObj = {
           url: 'https://logx.optimizely.com/v1/events',
@@ -1144,11 +1257,6 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '4',
-                  'experiment_id': '111127',
-                  'variation_id': '111129'
-                }],
                 'events': [{
                   'entity_id': '111095',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1166,28 +1274,24 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
 
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION,
-            'PROJECT_CONFIG',
-            'testUser'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-            'OPTIMIZELY',
-            expectedObj.url,
-            JSON.stringify(expectedObj.params)));
+        var logMessage = createdLogger.log.args[0][1];
+        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
+                                               'OPTIMIZELY',
+                                               expectedObj.url,
+                                               JSON.stringify(expectedObj.params)));
       });
 
-      it('should call bucketer and dispatchEvent with proper args when including event tags and revenue', function() {
-        bucketStub.returns('111129');
+      it('should call dispatchEvent with proper args when including event tags and revenue', function() {
         optlyInstance.track('testEvent', 'testUser', undefined, {revenue: 4200, eventTag: 'chill'});
 
-        sinon.assert.calledOnce(bucketer.bucket);
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
+        sinon.assert.calledTwice(createdLogger.log);
 
         var expectedObj = {
           url: 'https://logx.optimizely.com/v1/events',
@@ -1197,11 +1301,6 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '4',
-                  'experiment_id': '111127',
-                  'variation_id': '111129'
-                }],
                 'events': [{
                   'entity_id': '111095',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1221,32 +1320,28 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
 
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION,
-            'PROJECT_CONFIG',
-            'testUser'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.INFO, sprintf(LOG_MESSAGES.PARSED_REVENUE_VALUE,
-            'EVENT_TAG_UTILS',
-            '4200'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-            'OPTIMIZELY',
-            expectedObj.url,
-            JSON.stringify(expectedObj.params)));
+        var logMessage0 = createdLogger.log.args[0][1];
+        assert.strictEqual(logMessage0, sprintf(LOG_MESSAGES.PARSED_REVENUE_VALUE,
+                                               'EVENT_TAG_UTILS',
+                                               '4200'));
+        var logMessage1 = createdLogger.log.args[1][1];
+        assert.strictEqual(logMessage1, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
+                                               'OPTIMIZELY',
+                                               expectedObj.url,
+                                               JSON.stringify(expectedObj.params)));
       });
 
-      it('should call bucketer and dispatchEvent with proper args when including event tags and null event tag values and revenue', function() {
-        bucketStub.returns('111129');
+      it('should call dispatchEvent with proper args when including event tags and null event tag values and revenue', function() {
         optlyInstance.track('testEvent', 'testUser', undefined, {revenue: 4200, eventTag: 'chill', 'testNullEventTag': null});
 
-        sinon.assert.calledOnce(bucketer.bucket);
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
+        sinon.assert.calledTwice(createdLogger.log);
 
         var expectedObj = {
           url: 'https://logx.optimizely.com/v1/events',
@@ -1256,11 +1351,6 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '4',
-                  'experiment_id': '111127',
-                  'variation_id': '111129'
-                }],
                 'events': [{
                   'entity_id': '111095',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1280,119 +1370,33 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
 
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION,
-            'PROJECT_CONFIG',
-            'testUser'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.INFO, sprintf(LOG_MESSAGES.PARSED_REVENUE_VALUE,
-            'EVENT_TAG_UTILS',
-            '4200'));
-
-        sinon.assert.calledWithExactly(createdLogger.log, LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-            'OPTIMIZELY',
-            expectedObj.url,
-            JSON.stringify(expectedObj.params)));
+        var logMessage0 = createdLogger.log.args[0][1];
+        assert.strictEqual(logMessage0, sprintf(LOG_MESSAGES.PARSED_REVENUE_VALUE,
+                                               'EVENT_TAG_UTILS',
+                                               '4200'));
+        var logMessage1 = createdLogger.log.args[1][1];
+        assert.strictEqual(logMessage1, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
+                                               'OPTIMIZELY',
+                                               expectedObj.url,
+                                               JSON.stringify(expectedObj.params)));
       });
 
-      it('should call bucketer and dispatchEvent with proper args when including invalid event value', function() {
-        bucketStub.returns('111129');
+      it('should not call dispatchEvent when including invalid event value', function() {
         optlyInstance.track('testEvent', 'testUser', undefined, '4200');
 
-        sinon.assert.notCalled(bucketer.bucket);
         sinon.assert.notCalled(eventDispatcher.dispatchEvent);
         sinon.assert.calledOnce(createdLogger.log);
       });
 
-      it('should not track a user for an experiment not running', function() {
+      it('should track a user for an experiment not running', function() {
         optlyInstance.track('testEventWithExperimentNotRunning', 'testUser');
-        sinon.assert.notCalled(bucketer.bucket);
-        sinon.assert.notCalled(eventDispatcher.dispatchEvent);
-
-        sinon.assert.calledThrice(createdLogger.log);
-        var logMessage1 = createdLogger.log.args[0][1];
-        assert.strictEqual(logMessage1, sprintf(LOG_MESSAGES.EXPERIMENT_NOT_RUNNING, 'DECISION_SERVICE', 'testExperimentNotRunning'));
-        var logMessage2 = createdLogger.log.args[1][1];
-        assert.strictEqual(logMessage2, sprintf(LOG_MESSAGES.NOT_TRACKING_USER_FOR_EXPERIMENT, 'OPTIMIZELY', 'testUser', 'testExperimentNotRunning'));
-        var logMessage3 = createdLogger.log.args[2][1];
-        assert.strictEqual(logMessage3, sprintf(LOG_MESSAGES.EVENT_NOT_ASSOCIATED_WITH_EXPERIMENTS, 'OPTIMIZELY', 'testEventWithExperimentNotRunning'));
-      });
-
-      it('should not track a user when user is not in the audience of the experiment', function() {
-        optlyInstance.track('testEventWithAudiences', 'testUser', {browser_type: 'chrome'});
-        sinon.assert.notCalled(bucketer.bucket);
-        sinon.assert.notCalled(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION, 'PROJECT_CONFIG','testUser')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.INFO,
-            sprintf(LOG_MESSAGES.USER_NOT_IN_EXPERIMENT, 'DECISION_SERVICE', 'testUser', 'testExperimentWithAudiences')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG,
-            sprintf(LOG_MESSAGES.NOT_TRACKING_USER_FOR_EXPERIMENT, 'OPTIMIZELY', 'testUser', 'testExperimentWithAudiences')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.WARNING,
-            sprintf(LOG_MESSAGES.EVENT_NOT_ASSOCIATED_WITH_EXPERIMENTS, 'OPTIMIZELY', 'testEventWithAudiences')
-        );
-      });
-
-      it('should not track a user when the event has no associated experiments', function() {
-        optlyInstance.track('testEventWithoutExperiments', 'testUser');
-        sinon.assert.notCalled(bucketer.bucket);
-        sinon.assert.notCalled(eventDispatcher.dispatchEvent);
-        sinon.assert.calledOnce(createdLogger.log);
-        var logMessage = createdLogger.log.args[0][1];
-        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.EVENT_NOT_ASSOCIATED_WITH_EXPERIMENTS, 'OPTIMIZELY', 'testEventWithoutExperiments'));
-      });
-
-      it('should not track a user when the user is not bucketed into the experiment', function() {
-        bucketStub.returns(null);
-        optlyInstance.track('testEvent', 'testUser');
-        sinon.assert.notCalled(eventDispatcher.dispatchEvent);
-        sinon.assert.called(createdLogger.log);
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG,
-            sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION, 'PROJECT_CONFIG', 'testUser')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG,
-            sprintf(LOG_MESSAGES.NOT_TRACKING_USER_FOR_EXPERIMENT, 'OPTIMIZELY', 'testUser', 'testExperiment')
-        );
-      });
-
-      it('should only send conversion events in experiments the user is bucketed into', function() {
-        bucketStub.onCall(0).returns('111129');
-        bucketStub.onCall(1).returns(null);
-
-        optlyInstance.track('testEventWithMultipleExperiments', 'testUser', {browser_type: 'firefox'});
-
-        sinon.assert.calledTwice(bucketer.bucket);
-
-        // conversion event only dispatched once because user is bucketed into only 1 of 3 experiments
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-      });
-
-      it('should only track a user for experiments where they are in the audience and where the experiment is running', function() {
         var expectedObj = {
           url: 'https://logx.optimizely.com/v1/events',
           httpVerb: 'POST',
@@ -1401,15 +1405,107 @@ describe('lib/optimizely', function() {
             'project_id': '111001',
             'visitors': [{
               'snapshots': [{
-                'decisions': [{
-                  'campaign_id': '4',
-                  'experiment_id': '111127',
-                  'variation_id': '111129'
-                }, {
-                  'campaign_id': '5',
-                  'experiment_id': '122227',
-                  'variation_id': '122229'
-                }],
+                'events': [{
+                  'entity_id': '111099',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEventWithExperimentNotRunning',
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should track a user when user is not in the audience of the experiment', function() {
+        optlyInstance.track('testEventWithAudiences', 'testUser', {browser_type: 'chrome'});
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
+                'events': [{
+                  'entity_id': '111097',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEventWithAudiences',
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [{
+                'entity_id': '111094',
+                'key': 'browser_type',
+                'type': 'custom',
+                'value': 'chrome'
+              }],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should track a user when the event has no associated experiments', function() {
+        optlyInstance.track('testEventWithoutExperiments', 'testUser');
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
+                'events': [{
+                  'entity_id': '111098',
+                  'timestamp': Math.round(new Date().getTime()),
+                  'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
+                  'key': 'testEventWithoutExperiments',
+                }]
+              }],
+              'visitor_id': 'testUser',
+              'attributes': [],
+            }],
+            'revision': '42',
+            'client_name': 'node-sdk',
+            'client_version': enums.NODE_CLIENT_VERSION,
+            'anonymize_ip': false,
+            'enrich_decisions': true,
+          },
+        };
+        var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
+        assert.deepEqual(eventDispatcherCall[0], expectedObj);
+      });
+
+      it('should only send one conversion event when the event is attached to multiple experiments', function() {
+        optlyInstance.track('testEventWithMultipleExperiments', 'testUser', {browser_type: 'firefox'});
+        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
+        var expectedObj = {
+          url: 'https://logx.optimizely.com/v1/events',
+          httpVerb: 'POST',
+          params: {
+            'account_id': '12001',
+            'project_id': '111001',
+            'visitors': [{
+              'snapshots': [{
                 'events': [{
                   'entity_id': '111100',
                   'timestamp': Math.round(new Date().getTime()),
@@ -1429,49 +1525,11 @@ describe('lib/optimizely', function() {
             'client_name': 'node-sdk',
             'client_version': enums.NODE_CLIENT_VERSION,
             'anonymize_ip': false,
-          }
+            'enrich_decisions': true,
+          },
         };
-
-        bucketStub.onCall(0).returns('111129');
-        bucketStub.onCall(1).returns('122229');
-        // Of the 3 experiments attached to the event, 2 are sent in conversion event (one without audiences and one with proper audience are in - one with experiment not running is left out)
-        optlyInstance.track('testEventWithMultipleExperiments', 'testUser', {browser_type: 'firefox'});
-
-        sinon.assert.calledTwice(bucketStub);
-        sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-
         var eventDispatcherCall = eventDispatcher.dispatchEvent.args[0];
         assert.deepEqual(eventDispatcherCall[0], expectedObj);
-
-        sinon.assert.called(createdLogger.log);
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG,
-            sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION, 'PROJECT_CONFIG', 'testUser')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.INFO,
-            sprintf(LOG_MESSAGES.EXPERIMENT_NOT_RUNNING, 'DECISION_SERVICE', 'testExperimentNotRunning')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG,
-            sprintf(LOG_MESSAGES.NOT_TRACKING_USER_FOR_EXPERIMENT, 'OPTIMIZELY', 'testUser', 'testExperimentNotRunning')
-        );
-
-        sinon.assert.calledWithExactly(
-            createdLogger.log,
-            LOG_LEVEL.DEBUG,
-            sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-                'OPTIMIZELY',
-                expectedObj.url,
-                JSON.stringify(expectedObj.params)
-            )
-        );
       });
 
       it('should throw an error for invalid user ID', function() {
@@ -1495,11 +1553,11 @@ describe('lib/optimizely', function() {
 
         sinon.assert.calledOnce(errorHandler.handleError);
         var errorMessage = errorHandler.handleError.lastCall.args[0].message;
-        assert.strictEqual(errorMessage, sprintf(ERROR_MESSAGES.INVALID_EVENT_KEY, 'PROJECT_CONFIG', 'invalidEventKey'));
+        assert.strictEqual(errorMessage, sprintf(ERROR_MESSAGES.INVALID_EVENT_KEY, 'OPTIMIZELY', 'invalidEventKey'));
 
         sinon.assert.calledTwice(createdLogger.log);
         var logMessage1 = createdLogger.log.args[0][1];
-        assert.strictEqual(logMessage1, sprintf(ERROR_MESSAGES.INVALID_EVENT_KEY, 'PROJECT_CONFIG', 'invalidEventKey'));
+        assert.strictEqual(logMessage1, sprintf(ERROR_MESSAGES.INVALID_EVENT_KEY, 'OPTIMIZELY', 'invalidEventKey'));
 
         var logMessage2 = createdLogger.log.args[1][1];
         assert.strictEqual(logMessage2, sprintf(LOG_MESSAGES.NOT_TRACKING_USER, 'OPTIMIZELY', 'testUser'));
@@ -1521,16 +1579,10 @@ describe('lib/optimizely', function() {
 
       it('should not throw an error for an event key without associated experiment IDs', function() {
         optlyInstance.track('testEventWithoutExperiments', 'testUser');
-        sinon.assert.notCalled(eventDispatcher.dispatchEvent);
         sinon.assert.notCalled(errorHandler.handleError);
-
-        sinon.assert.calledOnce(createdLogger.log);
-        var logMessage = createdLogger.log.args[0][1];
-        assert.strictEqual(logMessage, sprintf(LOG_MESSAGES.EVENT_NOT_ASSOCIATED_WITH_EXPERIMENTS, 'OPTIMIZELY', 'testEventWithoutExperiments'));
       });
 
       it('should track when logger is in DEBUG mode', function() {
-        bucketStub.returns('111129');
         var instance = new Optimizely({
           datafile: testData.getTestProjectConfig(),
           errorHandler: errorHandler,
@@ -1545,72 +1597,6 @@ describe('lib/optimizely', function() {
 
         instance.track('testEvent', 'testUser');
         sinon.assert.calledOnce(eventDispatcher.dispatchEvent);
-      });
-
-      describe('whitelisting', function() {
-        beforeEach(function() {
-          sinon.spy(Optimizely.prototype, '__validateInputs');
-        });
-
-        afterEach(function() {
-          Optimizely.prototype.__validateInputs.restore();
-        });
-
-        it('should return forced variation after experiment status check and before audience check when looping through valid experiments', function() {
-          optlyInstance.track('testEvent', 'user1');
-
-          sinon.assert.calledTwice(Optimizely.prototype.__validateInputs);
-
-          sinon.assert.calledThrice(createdLogger.log);
-
-          var logMessage0 = createdLogger.log.args[0][1];
-          assert.strictEqual(logMessage0, sprintf(LOG_MESSAGES.USER_HAS_NO_FORCED_VARIATION, 'PROJECT_CONFIG', 'user1'));
-          var logMessage1 = createdLogger.log.args[1][1];
-          assert.strictEqual(logMessage1, sprintf(LOG_MESSAGES.USER_FORCED_IN_VARIATION, 'DECISION_SERVICE', 'user1', 'control'));
-
-          var expectedObj = {
-            url: 'https://logx.optimizely.com/v1/events',
-            httpVerb: 'POST',
-            params: {
-              'account_id': '12001',
-              'project_id': '111001',
-              'visitors': [{
-                'snapshots': [{
-                  'decisions': [{
-                    'campaign_id': '4',
-                    'experiment_id': '111127',
-                    'variation_id': '111128'
-                  }],
-                  'events': [{
-                    'entity_id': '111095',
-                    'timestamp': Math.round(new Date().getTime()),
-                    'uuid': 'a68cf1ad-0393-4e18-af87-efe8f01a7c9c',
-                    'key': 'testEvent',
-                  }]
-                }],
-                'visitor_id': 'user1',
-                'attributes': [],
-              }],
-              'revision': '42',
-              'client_name': 'node-sdk',
-              'client_version': enums.NODE_CLIENT_VERSION,
-              'anonymize_ip': false,
-            }
-          };
-          var logMessage2 = createdLogger.log.args[2][1];
-          assert.strictEqual(logMessage2, sprintf(LOG_MESSAGES.DISPATCH_CONVERSION_EVENT,
-                                                  'OPTIMIZELY',
-                                                  expectedObj.url,
-                                                  JSON.stringify(expectedObj.params)));
-        });
-      });
-
-      it('does not dispatch the event if user is in experiment and experiment is set to Launched', function() {
-        bucketStub.returns('144448');
-
-        optlyInstance.track('testEventLaunched', 'testUser');
-
-        sinon.assert.notCalled(eventDispatcher.dispatchEvent);
       });
 
       it('should not track when optimizely object is not a valid instance', function() {
@@ -2282,6 +2268,7 @@ describe('lib/optimizely', function() {
             client_name: 'node-sdk',
             client_version: enums.NODE_CLIENT_VERSION,
             anonymize_ip: false,
+            enrich_decisions: true,
           },
         };
         var instanceExperiments = optlyInstance.configObj.experiments;
@@ -2346,6 +2333,7 @@ describe('lib/optimizely', function() {
             client_name: 'node-sdk',
             client_version: enums.NODE_CLIENT_VERSION,
             anonymize_ip: false,
+            enrich_decisions: true,
           },
         };
         var instanceExperiments = optlyInstance.configObj.experiments;
@@ -2376,13 +2364,6 @@ describe('lib/optimizely', function() {
               {
                 snapshots: [
                   {
-                    decisions: [
-                      {
-                        campaign_id: '4',
-                        experiment_id: '111127',
-                        variation_id: '111129',
-                      },
-                    ],
                     events: [
                       {
                         entity_id: '111095',
@@ -2401,6 +2382,7 @@ describe('lib/optimizely', function() {
             client_name: 'node-sdk',
             client_version: enums.NODE_CLIENT_VERSION,
             anonymize_ip: false,
+            enrich_decisions: true,
           },
         };
         var expectedArgument = {
@@ -2433,13 +2415,6 @@ describe('lib/optimizely', function() {
               {
                 snapshots: [
                   {
-                    decisions: [
-                      {
-                        campaign_id: '4',
-                        experiment_id: '111127',
-                        variation_id: '111129',
-                      },
-                    ],
                     events: [
                       {
                         entity_id: '111095',
@@ -2465,6 +2440,7 @@ describe('lib/optimizely', function() {
             client_name: 'node-sdk',
             client_version: enums.NODE_CLIENT_VERSION,
             anonymize_ip: false,
+            enrich_decisions: true,
           },
         };
         var expectedArgument = {
@@ -2501,13 +2477,6 @@ describe('lib/optimizely', function() {
               {
                 snapshots: [
                   {
-                    decisions: [
-                      {
-                        campaign_id: '4',
-                        experiment_id: '111127',
-                        variation_id: '111129',
-                      },
-                    ],
                     events: [
                       {
                         entity_id: '111095',
@@ -2538,6 +2507,7 @@ describe('lib/optimizely', function() {
             client_name: 'node-sdk',
             client_version: enums.NODE_CLIENT_VERSION,
             anonymize_ip: false,
+            enrich_decisions: true,
           },
         };
         var expectedArgument = {
@@ -2742,8 +2712,9 @@ describe('lib/optimizely', function() {
                 'revision': '35',
                 'client_name': 'node-sdk',
                 'client_version': enums.NODE_CLIENT_VERSION,
-                'anonymize_ip': true
-              }
+                'anonymize_ip': true,
+                'enrich_decisions': true,
+              },
             };
             var callArgs = eventDispatcher.dispatchEvent.getCalls()[0].args;
             assert.deepEqual(callArgs[0], expectedImpressionEvent);
@@ -2912,8 +2883,9 @@ describe('lib/optimizely', function() {
                 'revision': '35',
                 'client_name': 'node-sdk',
                 'client_version': enums.NODE_CLIENT_VERSION,
-                'anonymize_ip': true
-              }
+                'anonymize_ip': true,
+                'enrich_decisions': true,
+              },
             };
             var callArgs = eventDispatcher.dispatchEvent.getCalls()[0].args;
             assert.deepEqual(callArgs[0], expectedImpressionEvent);
@@ -3042,7 +3014,7 @@ describe('lib/optimizely', function() {
         assert.strictEqual(result.length, 2);
         assert.isAbove(result.indexOf('test_feature'), -1);
         assert.isAbove(result.indexOf('test_feature_for_experiment'), -1);
-        sinon.assert.callCount(optlyInstance.isFeatureEnabled, 6);
+        sinon.assert.callCount(optlyInstance.isFeatureEnabled, 7);
         sinon.assert.calledWithExactly(
           optlyInstance.isFeatureEnabled,
           'test_feature',
@@ -3076,6 +3048,12 @@ describe('lib/optimizely', function() {
         sinon.assert.calledWithExactly(
           optlyInstance.isFeatureEnabled,
           'unused_flag',
+          'user1',
+          attributes
+        );
+        sinon.assert.calledWithExactly(
+          optlyInstance.isFeatureEnabled,
+          'feature_exp_no_traffic',
           'user1',
           attributes
         );
@@ -3475,13 +3453,6 @@ describe('lib/optimizely', function() {
         eventDispatcher.dispatchEvent.getCall(0).args[0].params.visitors[0].attributes,
         [{ entity_id: '594015', key: 'house', type: 'custom', value: 'Welcome to Slytherin!' }]
       );
-    });
-
-    it('can exclude a user from an experiment with a typed audience via track', function() {
-      optlyInstance.track('item_bought', 'user1', {
-        house: 'Welcome to Hufflepuff!',
-      });
-      sinon.assert.notCalled(eventDispatcher.dispatchEvent);
     });
 
     it('can include a user in a rollout with a typed audience via isFeatureEnabled', function() {
